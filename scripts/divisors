@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Use factor(1) and bc(1) to output all divisors for a number
+# This is proposed to be added to factor(1) through the -a,--all option
+
+test "$1" == '--help' && { echo 'Usage: divisors [NUMBER]...'; exit; }
+
+factor "$@" |
+while read -r label factors
+do
+  printf '%s ' "$label"
+  set -- $factors
+
+  {
+    printf '
+define d(i,x) {
+  auto j,y,z
+  j=i
+  while (j<%d && p[j]==p[i]) j=j+1
+  y=x
+  while (1) {
+    if (j==%d) y else z=d(j,y)
+    if (i==j) return(0)
+    y=y*p[i]
+    i=i+1
+  }
+}\n' "$#" "$#"
+
+    i=0
+    for p; do
+      printf 'p[%d]=%s\n' "$i" "$p"
+      i=$(($i + 1))
+    done
+
+    printf 'z=d(0,1)\n'
+  } |
+  BC_LINE_LENGTH=0 bc |
+  sort -n |
+  paste -sd ' '
+done
